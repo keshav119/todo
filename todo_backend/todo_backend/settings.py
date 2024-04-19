@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(8hmnrk@+$v@!*rz)x2xbi)8rcj1-5xg3z2s2g3skx@kyar6e('
+SECRET_KEY = 'Gr0wLyxlmIeq0clXzVl1W3Mwx2h1KzWNr/ZYtH+3e13G1dKPT9kdUXNWxeXcXB0baifbsahhc6wmSd4RAP98ZA=='
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -78,12 +78,12 @@ WSGI_APPLICATION = 'todo_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'todo',
-        'USER': 'todoAdmin',
-        'PASSWORD': '12345678',
-        'HOST':'127.0.0.1',
-        'PORT':'3306',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres.pnpqnpjzemjhjjiaoqve',
+        'PASSWORD': 'Keshavdev@123',
+        'HOST':'aws-0-ap-south-1.pooler.supabase.com',
+        'PORT':'5432',
     }
 }
 
