@@ -1,4 +1,6 @@
 echo "Building the project..."
+python3.9 pip install pipenv
+pipenv install --ignore-pipfile
 python3.9 -m pip install -r requirements.txt
 
 echo "Make Migration..."
