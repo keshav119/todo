@@ -20,4 +20,6 @@ urlpatterns = [
     path('updateTask/<int:task_id>/', views.update_task, name='update_task'),
     path('getTask/<int:task_list_id>/', views.get_tasks_by_task_list, name='get_task'),
     path('deleteTask/<int:task_id>/', views.delete_task, name='delete_task'),
+
+    path('dashboardData/<int:user_id>/', views.fetch_dashboard_data, name='dashboard_data'),
 ]

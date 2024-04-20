@@ -1,12 +1,11 @@
 import json
-import jwt 
+import jwt
 from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
-from .models import TaskList, Task
+from django.http import HttpResponse, JsonResponse
+from .models import TaskList, Task, Category  
 from datetime import datetime, timedelta
 from todo_backend import settings
-from django.http import JsonResponse
 from django.contrib.auth.models import User  # Import Django's default User model
 
 def index(request):
@@ -21,11 +20,16 @@ def index(request):
     '''
     return HttpResponse(html)
 
-def verify_token(token):
+def verify_token(request):
+    authorization_header = request.headers.get('Authorization')
+    
+    if not authorization_header or not authorization_header.startswith('Bearer '):
+        return None
+    
+    token = authorization_header.split(' ')[1]
     
     try:
         decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        
         
         user_id = decoded_token.get('user_id')
         
@@ -64,7 +68,6 @@ def register(request):
         
         return JsonResponse({
             'message': 'User created successfully',
-            
             'success': True,
         }, status=201)
     else:
@@ -114,7 +117,6 @@ def user_login(request):
                 'success': True,
             }, status=200)
             
-            response.set_cookie(key='jwt', value=token)
             return response
         else:
             # If authentication fails, return an error response
@@ -132,17 +134,8 @@ def user_login(request):
 def create_task_list(request):
     
     if request.method == 'POST':
-        # Extract token from headers
-        token = request.COOKIES.get('jwt')
-        
-        if not token:
-            return JsonResponse({
-                'message': 'Token is missing',
-                'success': False,
-            }, status=401)
-
         # Verify user authentication using token
-        user = verify_token(token)
+        user = verify_token(request)
         if user is None:
             return JsonResponse({
                 'message': 'Invalid token',
@@ -170,7 +163,10 @@ def create_task_list(request):
             end_date=end_date,
             priority=priority,
             user_id=user_id,
-            category_id=category_id
+            category_id=category_id,
+            total_tasks=0,
+            completed_tasks=0,
+            pending_tasks=0
         )
 
         return JsonResponse({
@@ -193,7 +189,6 @@ def user_logout(request):
             'message': 'User logged out successfully',
             'success': True,
         })
-        response.delete_cookie('jwt')  # Delete the JWT cookie
         return response
     else:
         return JsonResponse({
@@ -204,17 +199,8 @@ def user_logout(request):
 @csrf_exempt
 def get_tasklist_by_user_and_category(request):
     if request.method == 'POST':
-        # Extract token from headers
-        token = request.COOKIES.get('jwt')
-        
-        if not token:
-            return JsonResponse({
-                'message': 'Token is missing',
-                'success': False,
-            }, status=401)
-
         # Verify user authentication using token
-        user = verify_token(token)
+        user = verify_token(request)
         if user is None:
             return JsonResponse({
                 'message': 'Invalid token',
@@ -263,17 +249,8 @@ def get_tasklist_by_user_and_category(request):
 @csrf_exempt
 def update_task_list(request, task_list_id):
     if request.method == 'PUT':
-        # Extract token from headers
-        token = request.COOKIES.get('jwt')
-        
-        if not token:
-            return JsonResponse({
-                'message': 'Token is missing',
-                'success': False,
-            }, status=401)
-
         # Verify user authentication using token
-        user = verify_token(token)
+        user = verify_token(request)
         if user is None:
             return JsonResponse({
                 'message': 'Invalid token',
@@ -329,17 +306,8 @@ def update_task_list(request, task_list_id):
 @csrf_exempt
 def delete_task_list(request, task_list_id):
     if request.method == 'DELETE':
-        # Extract token from headers
-        token = request.COOKIES.get('jwt')
-        
-        if not token:
-            return JsonResponse({
-                'message': 'Token is missing',
-                'success': False,
-            }, status=401)
-
         # Verify user authentication using token
-        user = verify_token(token)
+        user = verify_token(request)
         if user is None:
             return JsonResponse({
                 'message': 'Invalid token',
@@ -382,6 +350,14 @@ def delete_task_list(request, task_list_id):
 @csrf_exempt
 def create_task(request):
     if request.method == 'POST':
+        # Verify user authentication using token
+        user = verify_token(request)
+        if user is None:
+            return JsonResponse({
+                'message': 'Invalid token',
+                'success': False,
+            }, status=401)
+
         # Parse the JSON data from the request body
         data = json.loads(request.body.decode('utf-8'))
 
@@ -425,6 +401,14 @@ def create_task(request):
 @csrf_exempt
 def update_task(request, task_id):
     if request.method == 'PUT':
+        # Verify user authentication using token
+        user = verify_token(request)
+        if user is None:
+            return JsonResponse({
+                'message': 'Invalid token',
+                'success': False,
+            }, status=401)
+
         # Parse the JSON data from the request body
         data = json.loads(request.body.decode('utf-8'))
 
@@ -449,6 +433,19 @@ def update_task(request, task_id):
 
         # Save the updated task
         task.save()
+
+        # Update total_tasks, pending_tasks, completed_tasks in task_list_table
+        task_list_id = task.task_list_id
+        total_tasks = Task.objects.filter(task_list_id=task_list_id).count()
+        pending_tasks = Task.objects.filter(task_list_id=task_list_id, status=False).count()
+        completed_tasks = Task.objects.filter(task_list_id=task_list_id, status=True).count()
+
+        # Update the task_list_table
+        task_list = TaskList.objects.get(id=task_list_id)
+        task_list.total_tasks = total_tasks
+        task_list.pending_tasks = pending_tasks
+        task_list.completed_tasks = completed_tasks
+        task_list.save()
 
         return JsonResponse({
             'message': 'Task updated successfully',
@@ -510,6 +507,50 @@ def delete_task(request, task_id):
             'success': True,
         }, status=200)
 
+    else:
+        return JsonResponse({
+            'message': 'Invalid',
+            'success': False,
+        }, status=405)
+
+@csrf_exempt
+def fetch_dashboard_data(request, user_id):
+    if request.method == 'POST':
+        # Fetch all task lists associated with the user
+        user_task_lists = TaskList.objects.filter(user_id=user_id)
+
+        # Initialize counters for total and completed tasks over all categories
+        total_tasks_all = 0
+        completed_tasks_all = 0
+
+        # Initialize dictionaries to store task counts for each category
+        category_task_counts = {}
+
+        # Iterate over each task list to aggregate task data over all categories
+        for task_list in user_task_lists:
+            total_tasks_all += task_list.total_tasks
+            completed_tasks_all += task_list.completed_tasks
+
+            # Check if the category exists in the dictionary, if not, initialize it
+            category_name = task_list.category.name
+            if category_name not in category_task_counts:
+                category_task_counts[category_name] = {
+                    'total_tasks': 0,
+                    'completed_tasks': 0,
+                }
+
+            # Update task counts for the category
+            category_task_counts[category_name]['total_tasks'] += task_list.total_tasks
+            category_task_counts[category_name]['completed_tasks'] += task_list.completed_tasks
+
+        # Return the aggregated task data for all categories and specific categories
+        return JsonResponse({
+            'message': 'Dashboard data fetched successfully',
+            'success': True,
+            'total_tasks_all': total_tasks_all,
+            'completed_tasks_all': completed_tasks_all,
+            'category_task_counts': category_task_counts,
+        }, status=200)
     else:
         return JsonResponse({
             'message': 'Invalid',

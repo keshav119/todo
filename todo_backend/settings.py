@@ -25,7 +25,7 @@ SECRET_KEY = 'Gr0wLyxlmIeq0clXzVl1W3Mwx2h1KzWNr/ZYtH+3e13G1dKPT9kdUXNWxeXcXB0bai
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app', '.now.sh', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['.vercel.app', '.now.sh', '127.0.0.1', 'localhost', '*']
 
 
 # Application definition
@@ -132,3 +132,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://localhost',
+    'https://example-us.vercel.app',
+    'https://example.us', 
+    'https://www.example.us', 
+    'https://www.example.us:40001',
+    'https://example.us:40001',
+    'https://0.0.0.0:40001',
+]
+CORS_ALLOW_HEADERS = [ "accept", "referer", "accept-encoding", "authorization", "content-type", "dnt", "origin", "user-agent", "x-csrftoken", "x-sessionid", "x-requested-with"]
+CORS_EXPOSE_HEADERS = ['Set-Cookie']
