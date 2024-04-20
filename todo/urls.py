@@ -2,6 +2,8 @@ from django.urls import path
 import todo.views as views
 
 urlpatterns = [
+    path('', views.index),
+
     #AUTH Routes
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='user_login'),

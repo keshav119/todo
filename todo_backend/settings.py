@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'todo.apps.TodoConfig',
+    
 ]
 
 MIDDLEWARE = [
@@ -70,7 +71,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'todo_backend.wsgi.application'
+WSGI_APPLICATION = 'todo_backend.wsgi.app'
 
 
 # Database

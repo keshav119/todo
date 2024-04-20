@@ -2,11 +2,24 @@ import json
 import jwt 
 from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
 from .models import TaskList, Task
 from datetime import datetime, timedelta
 from todo_backend import settings
 from django.http import JsonResponse
 from django.contrib.auth.models import User  # Import Django's default User model
+
+def index(request):
+    now = datetime.now()
+    html = f'''
+    <html>
+        <body>
+            <h1>Hello from Vercel!</h1>
+            <p>The current time is { now }.</p>
+        </body>
+    </html>
+    '''
+    return HttpResponse(html)
 
 def verify_token(token):
     
